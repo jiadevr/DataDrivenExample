@@ -6,6 +6,8 @@
 #include "GameFramework/Character.h"
 #include "DataDrivenExampleCharacter.generated.h"
 
+class UMeshDataAsset;
+
 UCLASS(Blueprintable)
 class ADataDrivenExampleCharacter : public ACharacter
 {
@@ -22,6 +24,21 @@ public:
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 
+	virtual void BeginPlay() override;
+
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="HeadingConfig")
+	TArray<UMeshDataAsset*> HeadingConfigArray;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="HeadingConfig")
+	TObjectPtr<UMeshDataAsset> CurrentHeadingConfig=nullptr;
+
+	UFUNCTION(BlueprintCallable,Category="HeadingConfig")
+	bool ChangeConfigWithIndex(const int32 TargetIndex);
+
+	UFUNCTION(BlueprintCallable,Category="HeadingConfig")
+	bool ChangeConfigWithCVar();
+
 private:
 	/** Top down camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
@@ -31,4 +48,3 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class USpringArmComponent* CameraBoom;
 };
-

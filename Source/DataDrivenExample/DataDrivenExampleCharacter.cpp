@@ -1,6 +1,8 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "DataDrivenExampleCharacter.h"
+
+#include "DataDrivenWorldSettings.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Camera/CameraComponent.h"
 #include "Components/DecalComponent.h"
@@ -10,6 +12,13 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Materials/Material.h"
 #include "Engine/World.h"
+#include "GameFramework/GameModeBase.h"
+#include "Kismet/GameplayStatics.h"
+#include "DataDrivenWorldSettings.h"
+
+static TAutoConsoleVariable<int32> CVarConfigIndex(
+	TEXT("DA.SetCurrentConfigIndex"), 0,TEXT("Set Current Heading Config To Item In Array Of Given Index"),
+	ECVF_Default);
 
 ADataDrivenExampleCharacter::ADataDrivenExampleCharacter()
 {
@@ -47,5 +56,49 @@ ADataDrivenExampleCharacter::ADataDrivenExampleCharacter()
 
 void ADataDrivenExampleCharacter::Tick(float DeltaSeconds)
 {
-    Super::Tick(DeltaSeconds);
+	Super::Tick(DeltaSeconds);
+}
+
+void ADataDrivenExampleCharacter::BeginPlay()
+{
+	ADataDrivenWorldSettings* DataDrivenWorldSettings = Cast<ADataDrivenWorldSettings>(
+		UGameplayStatics::GetGameMode(this)->GetWorld()->GetWorldSettings());
+	if (DataDrivenWorldSettings)
+	{
+		UMeshDataAsset* WorldHeadingConfig = DataDrivenWorldSettings->WorldDefaultHeadingConfig;
+		if (WorldHeadingConfig)
+		{
+			CurrentHeadingConfig = WorldHeadingConfig;
+			UE_LOG(LogTemp, Warning, TEXT("CurrentHeadingConfig Was Set With World Settings Data"));
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning,
+		       TEXT("Read ADataDrivenWorldSettings Config Failed,Please Check Project World Settings! "))
+		if (nullptr == CurrentHeadingConfig && HeadingConfigArray.IsValidIndex(0))
+		{
+			CurrentHeadingConfig = HeadingConfigArray[0];
+			UE_LOG(LogTemp, Warning, TEXT("CurrentHeadingConfig Was Set With HeadingConfigArray Data"));
+		}
+	}
+	
+	Super::BeginPlay();
+}
+
+bool ADataDrivenExampleCharacter::ChangeConfigWithIndex(const int32 TargetIndex)
+{
+	if (!HeadingConfigArray.IsValidIndex(TargetIndex))
+	{
+		UE_LOG(LogTemp, Error, TEXT("Invalid Index %d"), TargetIndex);
+		return false;
+	}
+	CurrentHeadingConfig = HeadingConfigArray[TargetIndex];
+	return true;
+}
+
+bool ADataDrivenExampleCharacter::ChangeConfigWithCVar()
+{
+	int32 CVarIndex = CVarConfigIndex.GetValueOnGameThread();
+	return ChangeConfigWithIndex(CVarIndex);
 }
