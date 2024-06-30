@@ -15,6 +15,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "DataDrivenWorldSettings.h"
+#include "Kismet/KismetStringLibrary.h"
 
 static TAutoConsoleVariable<int32> CVarConfigIndex(
 	TEXT("DA.SetCurrentConfigIndex"), 0,TEXT("Set Current Heading Config To Item In Array Of Given Index"),
@@ -61,28 +62,38 @@ void ADataDrivenExampleCharacter::Tick(float DeltaSeconds)
 
 void ADataDrivenExampleCharacter::BeginPlay()
 {
-	ADataDrivenWorldSettings* DataDrivenWorldSettings = Cast<ADataDrivenWorldSettings>(
-		UGameplayStatics::GetGameMode(this)->GetWorld()->GetWorldSettings());
-	if (DataDrivenWorldSettings)
+	bool bUseConfigIndex = false;
+	bool bGetSuccessfully = GConfig->GetBool(TEXT("DataDriven"),TEXT("bUseConfigIndex"), bUseConfigIndex, GGameIni);
+	int32 PresetIndexInConfig = 0;
+	bGetSuccessfully &= GConfig->GetInt(TEXT("DataDriven"),TEXT("PresetIndex"),PresetIndexInConfig,GGameIni);
+	if (bUseConfigIndex&&bGetSuccessfully&&ChangeConfigWithIndex(PresetIndexInConfig))
 	{
-		UMeshDataAsset* WorldHeadingConfig = DataDrivenWorldSettings->WorldDefaultHeadingConfig;
-		if (WorldHeadingConfig)
-		{
-			CurrentHeadingConfig = WorldHeadingConfig;
-			UE_LOG(LogTemp, Warning, TEXT("CurrentHeadingConfig Was Set With World Settings Data"));
-		}
+		UE_LOG(LogTemp,Display,TEXT("Change Preset To Index %d,Driven By Ini"),PresetIndexInConfig);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning,
-		       TEXT("Read ADataDrivenWorldSettings Config Failed,Please Check Project World Settings! "))
-		if (nullptr == CurrentHeadingConfig && HeadingConfigArray.IsValidIndex(0))
+		ADataDrivenWorldSettings* DataDrivenWorldSettings = Cast<ADataDrivenWorldSettings>(
+			UGameplayStatics::GetGameMode(this)->GetWorld()->GetWorldSettings());
+		if (DataDrivenWorldSettings)
 		{
-			CurrentHeadingConfig = HeadingConfigArray[0];
-			UE_LOG(LogTemp, Warning, TEXT("CurrentHeadingConfig Was Set With HeadingConfigArray Data"));
+			UMeshDataAsset* WorldHeadingConfig = DataDrivenWorldSettings->WorldDefaultHeadingConfig;
+			if (WorldHeadingConfig)
+			{
+				CurrentHeadingConfig = WorldHeadingConfig;
+				UE_LOG(LogTemp, Warning, TEXT("CurrentHeadingConfig Was Set With World Settings Data"));
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning,
+			       TEXT("Read ADataDrivenWorldSettings Config Failed,Please Check Project World Settings! "))
+			if (nullptr == CurrentHeadingConfig && HeadingConfigArray.IsValidIndex(0))
+			{
+				CurrentHeadingConfig = HeadingConfigArray[0];
+				UE_LOG(LogTemp, Warning, TEXT("CurrentHeadingConfig Was Set With HeadingConfigArray Data"));
+			}
 		}
 	}
-	
 	Super::BeginPlay();
 }
 
@@ -101,4 +112,11 @@ bool ADataDrivenExampleCharacter::ChangeConfigWithCVar()
 {
 	int32 CVarIndex = CVarConfigIndex.GetValueOnGameThread();
 	return ChangeConfigWithIndex(CVarIndex);
+}
+
+bool ADataDrivenExampleCharacter::IsChangeable()
+{
+	bool bIsChangeable = true;
+	bool bGetSuccessfully = GConfig->GetBool(TEXT("DataDriven"),TEXT("bIsChangeable"), bIsChangeable, GGameIni);
+	return bIsChangeable;
 }

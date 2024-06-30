@@ -39,6 +39,9 @@ protected:
 	UFUNCTION(BlueprintCallable,Category="HeadingConfig")
 	bool ChangeConfigWithCVar();
 
+	UFUNCTION(BlueprintCallable,BlueprintPure,Category="HeadingConfig")
+	bool IsChangeable();
+
 private:
 	/** Top down camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
